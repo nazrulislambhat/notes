@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  background: #FAF9F6;
+  color: #1C1B19;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Editor content */
+.editor-content {
+  outline: none;
+  min-height: 200px;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+.editor-content p {
+  margin: 0 0 0.65em 0;
+}
+
+.editor-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #8A8578;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.editor-content h1, .editor-content h2, .editor-content h3 {
+  font-family: Georgia, ui-serif, serif;
+  font-weight: 700;
+  margin: 0.8em 0 0.4em 0;
+}
+
+.editor-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.editor-content ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25em 0;
+}
+
+.editor-content ul[data-type="taskList"] li > label {
+  margin-top: 0.2em;
+  user-select: none;
+}
+
+.editor-content ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: #8A8578;
+  text-decoration: line-through;
+}
+
+.editor-content mark {
+  border-radius: 3px;
+  padding: 0.05em 0.1em;
+}
+
+.editor-content ul:not([data-type="taskList"]) {
+  padding-left: 1.3em;
+  list-style: disc;
+}
+
+.editor-content ol {
+  padding-left: 1.3em;
+  list-style: decimal;
+}
+
+.editor-content blockquote {
+  border-left: 3px solid #E7E3D9;
+  padding-left: 0.9em;
+  color: #565248;
+}
+
+.editor-content img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.5em 0;
+}
+
+/* Scrollbar - subtle */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #E7E3D9;
+  border-radius: 8px;
+}
