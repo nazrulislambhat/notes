@@ -49,7 +49,7 @@ export default function NoteList({
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-24 md:pb-0">
         {filtered.length === 0 && (
           <p className="text-sm text-muted text-center mt-10 px-4">No notes here yet.</p>
         )}

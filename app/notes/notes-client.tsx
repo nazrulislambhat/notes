@@ -8,11 +8,14 @@ import Sidebar from "@/components/Sidebar";
 import NoteList, { NoteRow } from "@/components/NoteList";
 import NoteToolbar from "@/components/NoteToolbar";
 import RichEditor from "@/components/RichEditor";
+import MobileHome from "@/components/MobileHome";
+import BottomNav from "@/components/BottomNav";
 
 type Note = NoteRow & { content: any; folder_id: string | null; user_id: string; note_tags?: { tag_id: string }[] };
 type Folder = { id: string; name: string };
 type Tag = { id: string; name: string };
 type Filter = { type: "all" | "folder" | "tag" | "trash"; id?: string };
+type MobileView = "home" | "list" | "editor";
 
 export default function NotesClient({
   initialNotes,
@@ -35,7 +38,7 @@ export default function NotesClient({
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
+  const [mobileView, setMobileView] = useState<MobileView>("home");
 
   // --- Realtime: keep every device in sync ---------------------------------
   useEffect(() => {
@@ -100,19 +103,32 @@ export default function NotesClient({
     }
   }
 
-  async function createNote() {
+  async function createNote(startWithChecklist = false) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const folder_id = filter.type === "folder" ? filter.id! : null;
+    const content = startWithChecklist
+      ? {
+          type: "doc",
+          content: [
+            {
+              type: "taskList",
+              content: [
+                { type: "taskItem", attrs: { checked: false }, content: [{ type: "paragraph" }] },
+              ],
+            },
+          ],
+        }
+      : {};
     const { data, error } = await supabase
       .from("notes")
-      .insert({ user_id: user.id, title: "", content: {}, content_text: "", folder_id })
+      .insert({ user_id: user.id, title: "", content, content_text: "", folder_id })
       .select()
       .single();
     if (!error && data) {
       setNotes((prev) => [data as Note, ...prev]);
       setActiveId(data.id);
-      setShowEditorOnMobile(true);
+      setMobileView("editor");
     }
   }
 
@@ -130,7 +146,7 @@ export default function NotesClient({
 
   function selectNote(id: string) {
     setActiveId(id);
-    setShowEditorOnMobile(true);
+    setMobileView("editor");
   }
 
   return (
@@ -142,20 +158,50 @@ export default function NotesClient({
         onSelectFilter={(f) => {
           setFilter(f);
           setSidebarOpen(false);
+          setMobileView("list");
         }}
         onCreateFolder={createFolder}
-        onNewNote={createNote}
+        onNewNote={() => createNote(false)}
         onSignOut={signOut}
         userEmail={userEmail}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
+      {/* ---------- Mobile: Home dashboard ---------- */}
+      <div className={`${mobileView === "home" ? "flex" : "hidden"} md:hidden flex-col w-full`}>
+        <MobileHome
+          userEmail={userEmail}
+          notes={notes}
+          onNewNote={() => createNote(false)}
+          onNewChecklist={() => createNote(true)}
+          onOpenNote={selectNote}
+          onGoFolders={() => {
+            setFilter({ type: "all" });
+            setMobileView("list");
+          }}
+          onGoPinned={() => setMobileView("list")}
+          onGoSearch={() => setMobileView("list")}
+          onGoTrash={() => {
+            setFilter({ type: "trash" });
+            setMobileView("list");
+          }}
+        />
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
-        <div className={`${showEditorOnMobile ? "hidden md:flex" : "flex"} md:flex flex-col w-full md:w-auto`}>
-          <div className="flex items-center gap-2 p-3 border-b border-line md:hidden">
-            <button onClick={() => setSidebarOpen(true)} className="text-sm">☰</button>
-            <span className="font-display text-lg">Notes</span>
+        {/* ---------- List panel: mobile "list" tab, always visible on desktop ---------- */}
+        <div
+          className={`${mobileView === "list" ? "flex" : "hidden"} md:flex flex-col w-full md:w-auto`}
+        >
+          <div className="flex items-center gap-2 p-3 border-b border-line">
+            <button onClick={() => setMobileView("home")} className="md:hidden text-sm text-accent">
+              ‹ Home
+            </button>
+            <button onClick={() => setSidebarOpen(true)} className="text-sm text-muted md:hidden ml-auto">
+              Filter ▾
+            </button>
+            <span className="font-display text-lg hidden md:inline">Notes</span>
           </div>
           <NoteList
             notes={visibleNotes}
@@ -166,7 +212,8 @@ export default function NotesClient({
           />
         </div>
 
-        <div className={`${showEditorOnMobile ? "flex" : "hidden md:flex"} flex-col flex-1 bg-white`}>
+        {/* ---------- Editor panel: mobile "editor" tab, always visible on desktop ---------- */}
+        <div className={`${mobileView === "editor" ? "flex" : "hidden"} md:flex flex-col flex-1 bg-white`}>
           {activeNote ? (
             <>
               <NoteToolbar
@@ -186,9 +233,9 @@ export default function NotesClient({
                   await supabase.from("notes").delete().eq("id", activeNote.id);
                   setNotes((prev) => prev.filter((n) => n.id !== activeNote.id));
                   setActiveId(null);
-                  setShowEditorOnMobile(false);
+                  setMobileView("list");
                 }}
-                onBack={() => setShowEditorOnMobile(false)}
+                onBack={() => setMobileView("list")}
               />
               <RichEditor
                 content={activeNote.content}
@@ -202,6 +249,17 @@ export default function NotesClient({
           )}
         </div>
       </div>
+
+      {mobileView !== "editor" && (
+        <BottomNav
+          active={mobileView}
+          onHome={() => setMobileView("home")}
+          onFolders={() => setMobileView("list")}
+          onCreate={() => createNote(false)}
+          onSearch={() => setMobileView("list")}
+          onAccount={signOut}
+        />
+      )}
     </div>
   );
 }
