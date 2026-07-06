@@ -1,6 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/auth/callback/route": "app/auth/callback/route.js",
-  "/login/page": "app/login/page.js",
-  "/notes/page": "app/notes/page.js"
-}
